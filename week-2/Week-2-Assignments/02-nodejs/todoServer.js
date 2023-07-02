@@ -39,11 +39,145 @@
 
   Testing the server - run `npm run test-todoServer` command in terminal
  */
-const express = require('express');
-const bodyParser = require('body-parser');
+const express = require("express");
+const bodyParser = require("body-parser");
+const cors = require("cors");
+const fs = require("fs");
+const { v4: uuidv4 } = require("uuid");
+const todosData = require("./todosData.json");
 
 const app = express();
+const port = 80;
 
+// Use default middlewares
 app.use(bodyParser.json());
+app.use(cors());
+
+// Handler utiltiy functions
+function findTodoHandler(_data, _id) {
+  const todoId = _id;
+  const foundTodo = todosData.find((e) => e.id === todoId);
+
+  return foundTodo;
+}
+
+// Create routes
+
+// Get all todos
+app.get("/todos", (req, res) => {
+  if (todosData.length == 0) {
+    res.status(404).json({
+      message: "No Todos found",
+    });
+  } else {
+    res.status(200).json({
+      data: todosData,
+    });
+  }
+});
+
+// Get particular todo
+app.get("/todos/:id", (req, res) => {
+  const foundTodo = findTodoHandler(todosData, req.params.id);
+
+  if (foundTodo) res.status(200).json({ data: foundTodo });
+  else
+    res.status(404).send({
+      message: "Todo not found!",
+    });
+});
+
+// Update a particular todo
+app.put("/todos/:id", (req, res) => {
+  const _id = req.params.id;
+  const foundTodo = findTodoHandler(todosData, _id);
+
+  if (foundTodo) {
+    const { title, description, completed } = req.body;
+
+    if (title && description && completed) {
+      foundTodo.title = title;
+      foundTodo.description = description;
+      foundTodo.completed = completed;
+
+      // Write the data to the file
+      fs.writeFileSync("todosData.json", JSON.stringify(todosData), "utf-8");
+
+      res.status(200).send({
+        todo: foundTodo,
+        message: "Todo updated successfully!",
+      });
+    } else {
+      res.status(400).send({
+        message: "Something went wrong!",
+      });
+    }
+  } else {
+    res.status(400).send({
+      message: "Todo not found!",
+    });
+  }
+});
+
+// create a todo
+app.post("/todos", (req, res) => {
+  try {
+    const { title, completed, description } = req.body;
+    console.log(req.body);
+    let newTodo = { title, completed, description };
+    console.log(title, completed, description);
+
+    if (title && completed && description) {
+      newTodo.title = title;
+      newTodo.completed = completed;
+      newTodo.description = description;
+      newTodo.id = uuidv4();
+
+      todosData.push(newTodo); // add todo to the array
+
+      // Write the data to the file
+      fs.writeFileSync("todosData.json", JSON.stringify(todosData), "utf-8");
+
+      res.status(201).json({
+        data: newTodo,
+        message: "Todo added successfully!",
+      });
+    } else {
+      res.status(400).json({
+        error: "Invalid new todo",
+      });
+    }
+  } catch (error) {
+    res.status(500).json(error.message);
+  }
+});
+
+// Delete a  particular todo
+app.delete("/todos/:id", (req, res) => {
+  const _id = req.params.id;
+  const foundTodo = findTodoHandler(todosData, _id);
+
+  if (foundTodo) {
+    const newTodosData = todosData.filter((todo) => todo.id !== _id);
+
+    // Write the data to the file
+    fs.writeFileSync("todosData.json", JSON.stringify(newTodosData), "utf-8");
+
+    res.status(200).send({
+      message: "Todo is deleted successfully!",
+    });
+  } else {
+    res.status(400).send({
+      message: "Todo not found",
+    });
+  }
+});
+
+// Catch-all route for any other routes
+app.all("*", (req, res) => {
+  res.status(404).send("Route not found");
+});
+
+app.listen(port, () => console.log("Listen on port " + port));
 
 module.exports = app;
