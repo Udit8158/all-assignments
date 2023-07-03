@@ -16,10 +16,26 @@
 
     Testing the server - run `npm run test-fileServer` command in terminal
  */
-const express = require('express');
-const fs = require('fs');
-const path = require('path');
+const express = require("express");
+const fs = require("fs");
+const path = require("path");
 const app = express();
 
+const folderPath = path.join(__dirname, "./files");
+
+function getAllFiles(_folderPath) {
+  // fs.readdir(_folderPath, (err, files) => {
+  //   if (err) {
+  //     console.error("Error reading folder:", err);
+  //     return;
+  //   }
+  //   // Print the names of all files
+  //   files.forEach((file) => {
+  //     console.log(file);
+  //   });
+  // });
+}
+
+getAllFiles(folderPath);
 
 module.exports = app;
